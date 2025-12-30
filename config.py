@@ -1,0 +1,10 @@
+import os
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+DATABASE_URL = os.getenv("DATABASE_URL")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+
+ADMIN_IDS = [123456789]  # Telegram numeric IDs
+USDT_WALLET = "YOUR_USDT_TRC20_ADDRESS"
+SUB_PRICE = 2
