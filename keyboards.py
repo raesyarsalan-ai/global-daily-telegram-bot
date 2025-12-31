@@ -1,16 +1,45 @@
-from telegram import ReplyKeyboardMarkup
-from languages import LANGUAGES, get_text
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from languages import LANGUAGES
 
 
-def language_keyboard():
-    keyboard = [[data["name"]] for data in LANGUAGES.values()]
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+def main_menu(lang: str) -> ReplyKeyboardMarkup:
+    t = LANGUAGES[lang]
 
-
-def main_menu(lang: str):
     keyboard = [
-        [get_text(lang, "task"), get_text(lang, "shop")],
-        [get_text(lang, "weather"), get_text(lang, "ai")],
-        [get_text(lang, "lang"), get_text(lang, "buy")]
+        [
+            KeyboardButton(text=t["task"]),
+            KeyboardButton(text=t["shop"]),
+        ],
+        [
+            KeyboardButton(text=t["weather"]),
+            KeyboardButton(text=t["ai"]),
+        ],
+        [
+            KeyboardButton(text=t["buy"]),
+            KeyboardButton(text=t["lang"]),
+        ],
     ]
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True
+    )
+
+
+def language_keyboard() -> ReplyKeyboardMarkup:
+    keyboard = []
+
+    row = []
+    for code, data in LANGUAGES.items():
+        row.append(KeyboardButton(text=data["name"]))
+        if len(row) == 2:
+            keyboard.append(row)
+            row = []
+
+    if row:
+        keyboard.append(row)
+
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True
+    )
