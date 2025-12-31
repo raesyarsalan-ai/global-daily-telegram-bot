@@ -1,26 +1,19 @@
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 from config import BOT_TOKEN
-from handlers import (
-    start_handler,
-    add_task_handler,
-    done_task_handler,
-    menu_callback_handler,
-    set_language
-)
+from database import init_db
+import handlers
 
 def main():
-    application = Application.builder().token(BOT_TOKEN).build()
+    init_db()
+    updater = Updater(BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    # Commands
-    application.add_handler(CommandHandler("start", start_handler))
-    application.add_handler(CommandHandler("addtask", add_task_handler))
-    application.add_handler(CommandHandler("donetask", done_task_handler))
+    dp.add_handler(CommandHandler("start", handlers.start))
+    dp.add_handler(CallbackQueryHandler(handlers.callback_handler))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handlers.text_handler))
 
-    # Inline buttons
-    application.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^menu_"))
-    application.add_handler(CallbackQueryHandler(set_language, pattern="^setlang_"))
-
-    application.run_polling()
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
     main()
