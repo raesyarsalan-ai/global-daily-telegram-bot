@@ -1,82 +1,59 @@
-from aiogram import Router
-from aiogram.types import Message
-from aiogram.filters import Command
-from languages import LANGUAGES
-from keyboards import main_menu, language_keyboard
-from database import get_language, set_language
+from telegram import Update
+from telegram.ext import ContextTypes
 
-router = Router()
+from database import add_task, get_tasks, mark_task_done
 
 
-@router.message(Command("start"))
-async def start_handler(message: Message):
-    user_id = message.from_user.id
-    lang = await get_language(user_id)
-
-    if not lang:
-        await message.answer(
-            "Please choose your language 🌐",
-            reply_markup=language_keyboard()
-        )
-        return
-
-    await message.answer(
-        LANGUAGES[lang]["welcome"],
-        reply_markup=main_menu(lang)
+async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👋 Welcome!\n\n"
+        "Available commands:\n"
+        "/addtask Buy milk\n"
+        "/tasks\n"
+        "/donetask 1"
     )
 
 
-@router.message(lambda m: m.text in [v["name"] for v in LANGUAGES.values()])
-async def language_selected(message: Message):
-    user_id = message.from_user.id
-
-    for code, data in LANGUAGES.items():
-        if message.text == data["name"]:
-            await set_language(user_id, code)
-            await message.answer(
-                data["welcome"],
-                reply_markup=main_menu(code)
-            )
-            return
-
-
-@router.message()
-async def handle_message(message: Message):
-    user_id = message.from_user.id
-    text = message.text
-    lang = await get_language(user_id)
-
-    if not lang:
-        await start_handler(message)
+async def add_task_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Usage: /addtask Buy milk")
         return
 
-    t = LANGUAGES[lang]
+    user_id = update.effective_user.id
+    text = " ".join(context.args)
 
-    if text == t["task"]:
-        await message.answer("Task system ready.")
+    add_task(user_id, text)
+    await update.message.reply_text("✅ Task added")
 
-    elif text == t["shop"]:
-        await message.answer("Shopping system ready.")
 
-    elif text == t["weather"]:
-        await message.answer("Weather system ready.")
+async def list_tasks_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    tasks = get_tasks(user_id)
 
-    elif text == t["ai"]:
-        await message.answer("AI Chat coming soon.")
+    if not tasks:
+        await update.message.reply_text("📝 You have no tasks.")
+        return
 
-    elif text == t["buy"]:
-        await message.answer(t["sub"])
+    message = "📝 Your tasks:\n\n"
+    for task_id, text, is_done in tasks:
+        status = "✅" if is_done else "⏳"
+        message += f"{task_id}. {status} {text}\n"
 
-    elif text == t["lang"]:
-        await message.answer(
-            "Choose language 🌐",
-            reply_markup=language_keyboard()
-        )
+    await update.message.reply_text(message)
 
-    else:
-        await message.answer(
-            t["welcome"],
-            reply_markup=main_menu(lang)
-        )
-async def add_task_handler(update, context):
-    ...
+
+async def done_task_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Usage: /donetask 1")
+        return
+
+    user_id = update.effective_user.id
+
+    try:
+        task_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("Task id must be a number.")
+        return
+
+    mark_task_done(task_id, user_id)
+    await update.message.reply_text("✅ Task marked as done")
