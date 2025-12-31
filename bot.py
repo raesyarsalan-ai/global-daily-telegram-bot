@@ -11,12 +11,12 @@ from handlers import (
 def main():
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # دستورات
+    # Commands
     application.add_handler(CommandHandler("start", start_handler))
     application.add_handler(CommandHandler("addtask", add_task_handler))
     application.add_handler(CommandHandler("donetask", done_task_handler))
 
-    # هندلر callback دکمه‌ها
+    # Inline buttons
     application.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^menu_"))
     application.add_handler(CallbackQueryHandler(set_language, pattern="^setlang_"))
 
