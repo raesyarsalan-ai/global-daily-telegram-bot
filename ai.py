@@ -5,22 +5,21 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 SYSTEM_PROMPT = """
 You are a smart, friendly daily assistant.
-Help users with tasks, productivity, daily planning, motivation,
-shopping lists, and life organization.
-Be concise, practical, and encouraging.
+Help users with tasks, productivity, daily planning, and motivation.
+Be concise and practical.
 """
 
 def ask_ai(user_text: str, language: str = "en") -> str:
     try:
-        response = client.chat.completions.create(
+        res = client.chat.completions.create(
             model=AI_MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_text}
+                {"role": "user", "content": user_text},
             ],
             temperature=0.7,
-            max_tokens=250
+            max_tokens=300,
         )
-        return response.choices[0].message.content
-    except Exception as e:
-        return "⚠️ AI is temporarily unavailable. Please try again."
+        return res.choices[0].message.content
+    except Exception:
+        return "⚠️ AI is temporarily unavailable."
