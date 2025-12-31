@@ -1,11 +1,26 @@
-import openai
-from config import OPENAI_API_KEY
-openai.api_key = OPENAI_API_KEY
+from openai import OpenAI
+from config import OPENAI_API_KEY, AI_MODEL
 
-async def chat_ai(prompt: str):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role":"user","content": prompt}],
-        max_tokens=300
-    )
-    return response.choices[0].message.content.strip()
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+SYSTEM_PROMPT = """
+You are a smart, friendly daily assistant.
+Help users with tasks, productivity, daily planning, motivation,
+shopping lists, and life organization.
+Be concise, practical, and encouraging.
+"""
+
+def ask_ai(user_text: str, language: str = "en") -> str:
+    try:
+        response = client.chat.completions.create(
+            model=AI_MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_text}
+            ],
+            temperature=0.7,
+            max_tokens=250
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return "⚠️ AI is temporarily unavailable. Please try again."
