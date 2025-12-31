@@ -12,11 +12,15 @@ from handlers import (
 
 
 async def main():
+    # init database (SYNC function → no await)
     init_db()
 
     application = Application.builder().token(BOT_TOKEN).build()
 
+    # basic
     application.add_handler(CommandHandler("start", start_handler))
+
+    # tasks
     application.add_handler(CommandHandler("addtask", add_task_handler))
     application.add_handler(CommandHandler("tasks", list_tasks_handler))
     application.add_handler(CommandHandler("donetask", done_task_handler))
