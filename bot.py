@@ -1,24 +1,27 @@
 import asyncio
-from aiogram import Bot, Dispatcher
-from aiogram.enums import ParseMode
+from telegram.ext import Application, CommandHandler
 
 from config import BOT_TOKEN
-from handlers import router
 from database import init_db
+from handlers import (
+    start_handler,
+    add_task_handler,
+    list_tasks_handler,
+    done_task_handler
+)
 
 
 async def main():
-          init_db()
+    init_db()
 
-    bot = Bot(
-        token=BOT_TOKEN,
-        parse_mode=ParseMode.HTML
-    )
+    application = Application.builder().token(BOT_TOKEN).build()
 
-    dp = Dispatcher()
-    dp.include_router(router)
+    application.add_handler(CommandHandler("start", start_handler))
+    application.add_handler(CommandHandler("addtask", add_task_handler))
+    application.add_handler(CommandHandler("tasks", list_tasks_handler))
+    application.add_handler(CommandHandler("donetask", done_task_handler))
 
-    await dp.start_polling(bot)
+    await application.run_polling()
 
 
 if __name__ == "__main__":
