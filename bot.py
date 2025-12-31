@@ -1,4 +1,3 @@
-import asyncio
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -11,7 +10,7 @@ from database import init_db
 import handlers
 
 
-async def main():
+def main():
     init_db()
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -21,8 +20,8 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.text_handler))
 
     print("🤖 Bot is running...")
-    await app.run_polling()
+    app.run_polling()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
