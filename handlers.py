@@ -7,7 +7,7 @@ from database import add_task, get_tasks, mark_task_done
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Welcome!\n\n"
-        "Available commands:\n"
+        "Commands:\n"
         "/addtask Buy milk\n"
         "/tasks\n"
         "/donetask 1"
