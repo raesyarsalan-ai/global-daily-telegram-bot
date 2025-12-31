@@ -1,91 +1,53 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CallbackQueryHandler
-from database import add_task, get_tasks, mark_task_done
-from languages import LANGUAGES
+from telegram import Update
+from telegram.ext import CallbackContext
+from database import get_language, set_language, add_task
+from languages import TEXTS
+from keyboards import main_menu, language_menu
+from ai import ask_ai
 
-async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def t(key, lang):
+    return TEXTS.get(key, {}).get(lang) or TEXTS[key]["en"]
+
+def start(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
-    # گرفتن زبان کاربر، پیشفرض انگلیسی
-    lang = context.user_data.get("lang", "en")
-    context.user_data["lang"] = lang
-    text = f"{LANGUAGES[lang]['welcome']}"
+    lang = get_language(user_id)
+    update.message.reply_text(t("start", lang), reply_markup=main_menu())
 
-    keyboard = [
-        [InlineKeyboardButton(LANGUAGES[lang]['task'], callback_data="menu_task")],
-        [InlineKeyboardButton(LANGUAGES[lang]['shop'], callback_data="menu_shop")],
-        [InlineKeyboardButton(LANGUAGES[lang]['weather'], callback_data="menu_weather")],
-        [InlineKeyboardButton(LANGUAGES[lang]['ai'], callback_data="menu_ai")],
-        [InlineKeyboardButton(LANGUAGES[lang]['buy'], callback_data="menu_subscription")],
-        [InlineKeyboardButton(LANGUAGES[lang]['lang'], callback_data="menu_lang")],
-    ]
-    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-
-
-async def language_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def callback_handler(update: Update, context: CallbackContext):
     query = update.callback_query
-    await query.answer()
-    lang_buttons = [[InlineKeyboardButton(LANGUAGES[l]["name"], callback_data=f"setlang_{l}")] for l in LANGUAGES]
-    await query.edit_message_text("🌐 Select language / انتخاب زبان:", reply_markup=InlineKeyboardMarkup(lang_buttons))
+    query.answer()
+    user_id = query.from_user.id
+    lang = get_language(user_id)
+    data = query.data
 
+    if data == "language":
+        query.edit_message_text("🌐 Choose language:", reply_markup=language_menu())
 
-async def set_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    lang_code = query.data.split("_")[1]
-    context.user_data["lang"] = lang_code
-    await query.edit_message_text(f"✅ Language set to {LANGUAGES[lang_code]['name']}")
-    # برگشت به منوی اصلی
-    await start_handler(update, context)
+    elif data.startswith("lang_"):
+        code = data.split("_")[1]
+        set_language(user_id, code)
+        query.edit_message_text("✅ Language updated", reply_markup=main_menu())
 
+    elif data == "task":
+        context.user_data["mode"] = "task"
+        query.edit_message_text(t("ask_task", lang))
 
-async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+    elif data == "ai":
+        context.user_data["mode"] = "ai"
+        query.edit_message_text("🤖 Ask me anything:")
+
+def text_handler(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
-    lang = context.user_data.get("lang", "en")
+    lang = get_language(user_id)
+    text = update.message.text
+    mode = context.user_data.get("mode")
 
-    if query.data == "menu_task":
-        tasks = get_tasks(user_id)
-        if not tasks:
-            await query.edit_message_text("📝 You have no tasks.")
-        else:
-            msg = "📝 Your tasks:\n\n"
-            for tid, text_task, done in tasks:
-                status = "✅" if done else "⏳"
-                msg += f"{tid}. {status} {text_task}\n"
-            await query.edit_message_text(msg)
-    elif query.data == "menu_shop":
-        await query.edit_message_text("🛒 Shopping list feature coming soon")
-    elif query.data == "menu_weather":
-        await query.edit_message_text("🌤 Weather feature coming soon")
-    elif query.data == "menu_ai":
-        await query.edit_message_text("🤖 AI chat feature coming soon")
-    elif query.data == "menu_subscription":
-        await query.edit_message_text(f"{LANGUAGES[lang]['sub']}")
-    elif query.data == "menu_lang":
-        await language_handler(update, context)
+    if mode == "task":
+        add_task(user_id, text)
+        update.message.reply_text(t("task_added", lang), reply_markup=main_menu())
+        context.user_data["mode"] = None
 
-
-# Task commands
-async def add_task_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text("Usage: /addtask Buy milk")
-        return
-    user_id = update.effective_user.id
-    text = " ".join(context.args)
-    add_task(user_id, text)
-    await update.message.reply_text("✅ Task added")
-
-
-async def done_task_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text("Usage: /donetask 1")
-        return
-    user_id = update.effective_user.id
-    try:
-        task_id = int(context.args[0])
-    except ValueError:
-        await update.message.reply_text("Task id must be a number.")
-        return
-    mark_task_done(task_id, user_id)
-    await update.message.reply_text("✅ Task marked as done")
+    elif mode == "ai":
+        update.message.reply_text(t("ai_thinking", lang))
+        reply = ask_ai(text, lang)
+        update.message.reply_text(reply, reply_markup=main_menu())
