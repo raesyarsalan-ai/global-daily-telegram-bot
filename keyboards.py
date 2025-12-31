@@ -1,12 +1,23 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from telegram import ReplyKeyboardMarkup
 
-main_keyboard = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="Daily Tasks")],
-        [KeyboardButton(text="Shopping List")],
-        [KeyboardButton(text="Weather")],
-        [KeyboardButton(text="AI Assistant")],
-        [KeyboardButton(text="Subscription")],
-    ],
-    resize_keyboard=True
-)
+def main_menu():
+    keyboard = [
+        ["📝 Daily Tasks", "🛒 Shopping List"],
+        ["🌤 Weather", "🌍 Language"],
+        ["ℹ️ About"]
+    ]
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True
+    )
+
+
+def language_menu():
+    keyboard = [
+        ["🇺🇸 English", "🇮🇷 Persian"],
+        ["⬅️ Back"]
+    ]
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True
+    )
