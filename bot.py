@@ -1,66 +1,25 @@
-import os
 import asyncio
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    filters,
-)
+from aiogram import Bot, Dispatcher
+from aiogram.enums import ParseMode
 
-from handlers import start, handle_message
-# از الان آماده DB و scheduler هستیم
-# from database import init_db
-# from scheduler import start_scheduler
+from config import BOT_TOKEN
+from handlers import router
+from database import init_db
 
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+async def main():
+    await init_db()
 
-
-async def on_startup(app: Application):
-    """
-    Runs once when bot starts
-    """
-    print("🚀 Bot starting...")
-
-    # اگر DB فعال شد، فقط این خط را uncomment کن
-    # await init_db()
-
-    # اگر scheduler اضافه شد
-    # start_scheduler(app)
-
-    print("✅ Startup completed")
-
-
-async def on_shutdown(app: Application):
-    """
-    Runs once when bot stops
-    """
-    print("🛑 Bot shutting down...")
-
-
-def main():
-    if not BOT_TOKEN:
-        raise RuntimeError("BOT_TOKEN is not set")
-
-    app = (
-        Application.builder()
-        .token(BOT_TOKEN)
-        .post_init(on_startup)
-        .post_shutdown(on_shutdown)
-        .build()
+    bot = Bot(
+        token=BOT_TOKEN,
+        parse_mode=ParseMode.HTML
     )
 
-    # Commands
-    app.add_handler(CommandHandler("start", start))
+    dp = Dispatcher()
+    dp.include_router(router)
 
-    # Text messages (buttons & free text)
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
-    )
-
-    print("🤖 Bot is running...")
-    app.run_polling(drop_pending_updates=True)
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
