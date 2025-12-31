@@ -1,70 +1,80 @@
-from telegram import Update
-from telegram.ext import ContextTypes
-from languages import LANGUAGES, get_text
+from aiogram import Router
+from aiogram.types import Message
+from aiogram.filters import Command
+from languages import LANGUAGES
 from keyboards import main_menu, language_keyboard
+from database import get_language, set_language
 
-USER_LANGUAGE = {}
+router = Router()
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
+@router.message(Command("start"))
+async def start_handler(message: Message):
+    user_id = message.from_user.id
+    lang = await get_language(user_id)
 
-    if user_id not in USER_LANGUAGE:
-        await update.message.reply_text(
+    if not lang:
+        await message.answer(
             "Please choose your language 🌐",
             reply_markup=language_keyboard()
         )
         return
 
-    lang = USER_LANGUAGE[user_id]
-    await update.message.reply_text(
-        get_text(lang, "welcome"),
+    await message.answer(
+        LANGUAGES[lang]["welcome"],
         reply_markup=main_menu(lang)
     )
 
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    user_id = update.effective_user.id
+@router.message(lambda m: m.text in [v["name"] for v in LANGUAGES.values()])
+async def language_selected(message: Message):
+    user_id = message.from_user.id
 
-    # Language selection
     for code, data in LANGUAGES.items():
-        if text == data["name"]:
-            USER_LANGUAGE[user_id] = code
-            await update.message.reply_text(
+        if message.text == data["name"]:
+            await set_language(user_id, code)
+            await message.answer(
                 data["welcome"],
                 reply_markup=main_menu(code)
             )
             return
 
-    lang = USER_LANGUAGE.get(user_id)
+
+@router.message()
+async def handle_message(message: Message):
+    user_id = message.from_user.id
+    text = message.text
+    lang = await get_language(user_id)
+
     if not lang:
-        await start(update, context)
+        await start_handler(message)
         return
 
-    if text == get_text(lang, "task"):
-        await update.message.reply_text("Task system ready.")
+    t = LANGUAGES[lang]
 
-    elif text == get_text(lang, "shop"):
-        await update.message.reply_text("Shopping system ready.")
+    if text == t["task"]:
+        await message.answer("Task system ready.")
 
-    elif text == get_text(lang, "weather"):
-        await update.message.reply_text("Weather system ready.")
+    elif text == t["shop"]:
+        await message.answer("Shopping system ready.")
 
-    elif text == get_text(lang, "ai"):
-        await update.message.reply_text("AI Chat coming soon.")
+    elif text == t["weather"]:
+        await message.answer("Weather system ready.")
 
-    elif text == get_text(lang, "buy"):
-        await update.message.reply_text(get_text(lang, "sub"))
+    elif text == t["ai"]:
+        await message.answer("AI Chat coming soon.")
 
-    elif text == get_text(lang, "lang"):
-        await update.message.reply_text(
+    elif text == t["buy"]:
+        await message.answer(t["sub"])
+
+    elif text == t["lang"]:
+        await message.answer(
             "Choose language 🌐",
             reply_markup=language_keyboard()
         )
 
     else:
-        await update.message.reply_text(
-            get_text(lang, "welcome"),
+        await message.answer(
+            t["welcome"],
             reply_markup=main_menu(lang)
         )
