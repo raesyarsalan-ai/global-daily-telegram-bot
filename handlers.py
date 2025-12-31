@@ -1,16 +1,50 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from database import add_task, get_tasks, mark_task_done
 
+from database import add_task, get_tasks, mark_task_done, set_language
 
+# Start handler با کیبورد 14 زبان
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [
+            InlineKeyboardButton("English", callback_data="lang_en"),
+            InlineKeyboardButton("فارسی", callback_data="lang_fa"),
+            InlineKeyboardButton("Español", callback_data="lang_es"),
+            InlineKeyboardButton("Français", callback_data="lang_fr"),
+        ],
+        [
+            InlineKeyboardButton("Deutsch", callback_data="lang_de"),
+            InlineKeyboardButton("中文", callback_data="lang_zh"),
+            InlineKeyboardButton("日本語", callback_data="lang_ja"),
+            InlineKeyboardButton("Русский", callback_data="lang_ru"),
+        ],
+        [
+            InlineKeyboardButton("العربية", callback_data="lang_ar"),
+            InlineKeyboardButton("हिन्दी", callback_data="lang_hi"),
+            InlineKeyboardButton("Português", callback_data="lang_pt"),
+            InlineKeyboardButton("Italiano", callback_data="lang_it"),
+        ],
+        [
+            InlineKeyboardButton("Türkçe", callback_data="lang_tr"),
+            InlineKeyboardButton("한국어", callback_data="lang_ko"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     await update.message.reply_text(
-        "👋 Welcome!\n\n"
-        "Commands:\n"
-        "/addtask Buy milk\n"
-        "/tasks\n"
-        "/donetask 1"
+        "👋 Welcome!\nPlease select your language:",
+        reply_markup=reply_markup
     )
+
+
+# هندلر انتخاب زبان از کیبورد
+async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    lang_code = query.data.split("_")[1]  # استخراج کد زبان
+    user_id = query.from_user.id
+    set_language(user_id, lang_code)
+    await query.edit_message_text(f"Language set to {lang_code}")
 
 
 async def add_task_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
