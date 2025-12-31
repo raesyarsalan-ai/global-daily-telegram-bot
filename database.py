@@ -1,16 +1,14 @@
 import sqlite3
+from datetime import datetime
 
-DB_NAME = "bot.db"
-
-
-def get_connection():
-    return sqlite3.connect(DB_NAME)
+DB_PATH = "bot.db"
 
 
 def init_db():
-    conn = get_connection()
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # users table (language system)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id INTEGER PRIMARY KEY,
@@ -18,34 +16,57 @@ def init_db():
     )
     """)
 
+    # tasks table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        is_done INTEGER DEFAULT 0,
+        created_at TEXT
+    )
+    """)
+
     conn.commit()
     conn.close()
 
 
-def get_language(user_id: int) -> str:
-    conn = get_connection()
+def add_task(user_id: int, text: str):
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT language FROM users WHERE user_id = ?",
+        "INSERT INTO tasks (user_id, text, created_at) VALUES (?, ?, ?)",
+        (user_id, text, datetime.utcnow().isoformat())
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def get_tasks(user_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id, text, is_done FROM tasks WHERE user_id = ? ORDER BY id DESC",
         (user_id,)
     )
 
-    row = cursor.fetchone()
+    tasks = cursor.fetchall()
     conn.close()
 
-    return row[0] if row else "en"
+    return tasks
 
 
-def set_language(user_id: int, language: str):
-    conn = get_connection()
+def mark_task_done(task_id: int, user_id: int):
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute("""
-    INSERT INTO users (user_id, language)
-    VALUES (?, ?)
-    ON CONFLICT(user_id) DO UPDATE SET language = excluded.language
-    """, (user_id, language))
+    cursor.execute(
+        "UPDATE tasks SET is_done = 1 WHERE id = ? AND user_id = ?",
+        (task_id, user_id)
+    )
 
     conn.commit()
     conn.close()
