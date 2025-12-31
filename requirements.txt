@@ -1,7 +1,2 @@
-aiogram==3.4.1
-asyncpg
-python-dotenv
-openai
-requests
-apscheduler
 python-telegram-bot==20.7
+openai>=1.0.0
