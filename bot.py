@@ -1,3 +1,4 @@
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -19,8 +20,11 @@ def main():
     app.add_handler(CallbackQueryHandler(handlers.callback_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.text_handler))
 
-    print("🤖 Bot is running...")
-    app.run_polling()
+    print("🤖 Bot is running (callbacks enabled)...")
+
+    app.run_polling(
+        allowed_updates=Update.ALL_TYPES
+    )
 
 
 if __name__ == "__main__":
