@@ -78,3 +78,5 @@ async def handle_message(message: Message):
             t["welcome"],
             reply_markup=main_menu(lang)
         )
+async def add_task_handler(update, context):
+    ...
