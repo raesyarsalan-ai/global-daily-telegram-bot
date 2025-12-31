@@ -1,67 +1,70 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-
-from keyboards import main_menu, language_menu
-from languages import get_text
+from languages import LANGUAGES, get_text
+from keyboards import main_menu, language_keyboard
 
 USER_LANGUAGE = {}
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    USER_LANGUAGE[user_id] = "en"
 
+    if user_id not in USER_LANGUAGE:
+        await update.message.reply_text(
+            "Please choose your language 🌐",
+            reply_markup=language_keyboard()
+        )
+        return
+
+    lang = USER_LANGUAGE[user_id]
     await update.message.reply_text(
-        get_text("en", "welcome"),
-        reply_markup=main_menu()
+        get_text(lang, "welcome"),
+        reply_markup=main_menu(lang)
     )
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     user_id = update.effective_user.id
-    lang = USER_LANGUAGE.get(user_id, "en")
 
-    if text == "📝 Daily Tasks":
-        await update.message.reply_text(get_text(lang, "tasks"))
+    # Language selection
+    for code, data in LANGUAGES.items():
+        if text == data["name"]:
+            USER_LANGUAGE[user_id] = code
+            await update.message.reply_text(
+                data["welcome"],
+                reply_markup=main_menu(code)
+            )
+            return
 
-    elif text == "🛒 Shopping List":
-        await update.message.reply_text(get_text(lang, "shopping"))
+    lang = USER_LANGUAGE.get(user_id)
+    if not lang:
+        await start(update, context)
+        return
 
-    elif text == "🌤 Weather":
-        await update.message.reply_text(get_text(lang, "weather"))
+    if text == get_text(lang, "task"):
+        await update.message.reply_text("Task system ready.")
 
-    elif text == "🌍 Language":
+    elif text == get_text(lang, "shop"):
+        await update.message.reply_text("Shopping system ready.")
+
+    elif text == get_text(lang, "weather"):
+        await update.message.reply_text("Weather system ready.")
+
+    elif text == get_text(lang, "ai"):
+        await update.message.reply_text("AI Chat coming soon.")
+
+    elif text == get_text(lang, "buy"):
+        await update.message.reply_text(get_text(lang, "sub"))
+
+    elif text == get_text(lang, "lang"):
         await update.message.reply_text(
-            get_text(lang, "choose_language"),
-            reply_markup=language_menu()
+            "Choose language 🌐",
+            reply_markup=language_keyboard()
         )
-
-    elif text == "🇺🇸 English":
-        USER_LANGUAGE[user_id] = "en"
-        await update.message.reply_text(
-            "Language set to English",
-            reply_markup=main_menu()
-        )
-
-    elif text == "🇮🇷 Persian":
-        USER_LANGUAGE[user_id] = "fa"
-        await update.message.reply_text(
-            "Language set to Persian",
-            reply_markup=main_menu()
-        )
-
-    elif text == "⬅️ Back":
-        await update.message.reply_text(
-            get_text(lang, "welcome"),
-            reply_markup=main_menu()
-        )
-
-    elif text == "ℹ️ About":
-        await update.message.reply_text(get_text(lang, "about"))
 
     else:
         await update.message.reply_text(
-            "Please use the menu buttons.",
-            reply_markup=main_menu()
+            get_text(lang, "welcome"),
+            reply_markup=main_menu(lang)
         )
