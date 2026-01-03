@@ -1,78 +1,56 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from keyboards import main_menu
+from keyboards import main_menu, shopping_time_menu
 from languages import LANGUAGES
 from ai import ask_ai
-from database import save_shopping, set_reminder
+from storage import save_shopping
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = "en"
-    context.user_data["lang"] = lang
+    context.user_data["lang"] = "en"
     await update.message.reply_text(
-        LANGUAGES[lang]["welcome"],
+        LANGUAGES["en"]["welcome"],
         reply_markup=main_menu()
     )
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+    q = update.callback_query
+    await q.answer()
 
-    data = query.data
+    if q.data == "ask_ai":
+        context.user_data["mode"] = "ai"
+        await q.message.reply_text("🤖 Ask anything:")
 
-    if data == "ask_ai":
-        context.user_data["mode"] = "ai_chat"
-        await query.message.reply_text("🤖 Ask your question:")
+    elif q.data == "shopping":
+        context.user_data["mode"] = "shopping"
+        await q.message.reply_text("🛒 Send your shopping list:")
 
-    elif data == "add_task":
-        context.user_data["mode"] = "add_task"
-        await query.message.reply_text("📝 Send your task:")
+    elif q.data == "shop_today":
+        items = context.user_data.pop("shopping_items", [])
+        save_shopping(q.from_user.id, items)
+        await q.message.reply_text("✅ Shopping list saved. I will remind you today.")
 
-    elif data == "shop":
-        context.user_data["mode"] = "shop_items"
-        await query.message.reply_text(
-            "🛒 Please send your shopping list (you can send a long list):"
-        )
+    elif q.data == "shop_later":
+        context.user_data["mode"] = "shopping_time"
+        await q.message.reply_text("📅 Please send reminder date & time:")
 
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     mode = context.user_data.get("mode")
-    user_id = update.effective_user.id
 
-    if mode == "ai_chat":
-        answer = await ask_ai(text)
-        await update.message.reply_text(answer)
-        return
+    if mode == "ai":
+        reply = await ask_ai(text)
+        await update.message.reply_text(reply)
 
-    if mode == "add_task":
-        await update.message.reply_text(f"✅ Task saved:\n{text}")
-        return
-
-    # 🛒 مرحله 1: ذخیره لیست خرید
-    if mode == "shop_items":
-        save_shopping(user_id, text)
-        context.user_data["mode"] = "shop_time"
+    elif mode == "shopping":
+        items = [x.strip() for x in text.split("\n")]
+        context.user_data["shopping_items"] = items
         await update.message.reply_text(
-            "✅ Shopping list saved.\n"
-            "🕒 Will you buy it **today** or **another date**?\n"
-            "If another date, please write the exact date."
+            "🛒 List saved. When should I remind you?",
+            reply_markup=shopping_time_menu()
         )
-        return
 
-    # 🛒 مرحله 2: زمان خرید
-    if mode == "shop_time":
-        if "today" in text.lower():
-            set_reminder(user_id, "today")
-            await update.message.reply_text(
-                "🛒 Noted! Today shopping saved.",
-                reply_markup=main_menu()
-            )
-        else:
-            set_reminder(user_id, text)
-            await update.message.reply_text(
-                f"⏰ Reminder set for: {text}",
-                reply_markup=main_menu()
-            )
-        context.user_data["mode"] = None
-        return
-
-    await update.message.reply_text("Use the menu 👇", reply_markup=main_menu())
+    elif mode == "shopping_time":
+        save_shopping(update.effective_user.id,
+                      context.user_data.get("shopping_items", []),
+                      remind_at=text)
+        await update.message.reply_text("✅ List saved. I will remind you at the selected time.")
