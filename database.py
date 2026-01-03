@@ -24,6 +24,15 @@ def init_db():
     )
     """)
 
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS shopping (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        item TEXT,
+        remind_at TEXT
+    )
+    """)
+
     db.commit()
     db.close()
 
@@ -52,5 +61,15 @@ def add_task(user_id, text):
     db = connect()
     c = db.cursor()
     c.execute("INSERT INTO tasks (user_id, text) VALUES (?,?)", (user_id, text))
+    db.commit()
+    db.close()
+
+def add_shopping_item(user_id, item, remind_at):
+    db = connect()
+    c = db.cursor()
+    c.execute(
+        "INSERT INTO shopping (user_id, item, remind_at) VALUES (?,?,?)",
+        (user_id, item, remind_at)
+    )
     db.commit()
     db.close()
