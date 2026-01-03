@@ -3,18 +3,12 @@ from config import OPENAI_API_KEY
 
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
-async def clean_shopping_list(text: str, lang: str):
-    response = await client.chat.completions.create(
+async def ask_ai(prompt: str) -> str:
+    res = await client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {
-                "role": "system",
-                "content": "You clean and organize shopping lists. Return a clear bullet list."
-            },
-            {
-                "role": "user",
-                "content": text
-            }
+            {"role": "system", "content": "You are a smart daily assistant."},
+            {"role": "user", "content": prompt}
         ]
     )
-    return response.choices[0].message.content
+    return res.choices[0].message.content
