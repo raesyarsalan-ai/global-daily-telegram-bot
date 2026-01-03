@@ -1,15 +1,15 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from languages import LANGUAGES
+from languages import TEXTS
 
-def main_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📝 Add Task", callback_data="task")],
-        [InlineKeyboardButton("🤖 Ask AI", callback_data="ai")],
-        [InlineKeyboardButton("🌐 Language", callback_data="language")]
-    ])
+def t(key, lang):
+    return TEXTS.get(key, {}).get(lang) or TEXTS[key]["en"]
 
-def language_menu():
+def main_menu(lang="en"):
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(v["name"], callback_data=f"lang_{k}")]
-        for k, v in LANGUAGES.items()
+        [InlineKeyboardButton(t("btn_task", lang), callback_data="task")],
+        [InlineKeyboardButton(t("btn_tasks", lang), callback_data="tasks")],
+        [InlineKeyboardButton(t("btn_shop", lang), callback_data="shop")],
+        [InlineKeyboardButton(t("btn_ai", lang), callback_data="ai")],
+        [InlineKeyboardButton(t("btn_lang", lang), callback_data="language")],
+        [InlineKeyboardButton(t("btn_help", lang), callback_data="help")],
     ])
