@@ -1,43 +1,16 @@
 LANGUAGES = {
-    "en": {"name": "English 🇺🇸"},
-    "fa": {"name": "فارسی 🇮🇷"},
-    "es": {"name": "Español 🇪🇸"},
-    "fr": {"name": "Français 🇫🇷"},
-    "de": {"name": "Deutsch 🇩🇪"},
-    "it": {"name": "Italiano 🇮🇹"},
-    "pt": {"name": "Português 🇵🇹"},
-    "ru": {"name": "Русский 🇷🇺"},
-    "tr": {"name": "Türkçe 🇹🇷"},
-    "ar": {"name": "العربية 🇸🇦"},
-    "hi": {"name": "Hindi 🇮🇳"},
-    "zh": {"name": "中文 🇨🇳"},
-    "ja": {"name": "日本語 🇯🇵"},
-    "ko": {"name": "한국어 🇰🇷"},
-}
-
-TEXTS = {
-    "start": {
-        "en": "👋 Welcome! I’m your AI-powered daily assistant.",
-        "fa": "👋 خوش آمدید! من دستیار هوش مصنوعی روزانه شما هستم.",
-    },
-    "ask_task": {
-        "en": "✍️ Send your task",
-        "fa": "✍️ متن کار را ارسال کنید",
-    },
-    "task_added": {
-        "en": "✅ Task saved",
-        "fa": "✅ کار ذخیره شد",
-    },
-    "ai_thinking": {
-        "en": "🤖 Thinking...",
-        "fa": "🤖 در حال فکر کردن...",
-    },
-    "ask_shop": {
-        "en": "🛒 What do you want to buy? You can include date & time.",
-        "fa": "🛒 چه چیزی می‌خواهید بخرید؟ می‌توانید تاریخ و ساعت هم بنویسید.",
-    },
-    "shop_saved": {
-        "en": "🛒 Shopping item(s) saved.",
-        "fa": "🛒 آیتم‌های خرید ذخیره شد.",
-    },
+    "en": {"name": "English 🇺🇸", "welcome": "👋 Welcome!", "menu": "Choose an option 👇"},
+    "fa": {"name": "فارسی 🇮🇷", "welcome": "👋 خوش آمدی!", "menu": "یک گزینه انتخاب کن 👇"},
+    "es": {"name": "Español 🇪🇸", "welcome": "👋 ¡Bienvenido!", "menu": "Elige 👇"},
+    "fr": {"name": "Français 🇫🇷", "welcome": "👋 Bienvenue!", "menu": "Choisissez 👇"},
+    "de": {"name": "Deutsch 🇩🇪", "welcome": "👋 Willkommen!", "menu": "Wähle 👇"},
+    "ru": {"name": "Русский 🇷🇺", "welcome": "👋 Добро пожаловать!", "menu": "Выберите 👇"},
+    "tr": {"name": "Türkçe 🇹🇷", "welcome": "👋 Hoş geldin!", "menu": "Seç 👇"},
+    "ar": {"name": "العربية 🇸🇦", "welcome": "👋 مرحبا!", "menu": "اختر 👇"},
+    "it": {"name": "Italiano 🇮🇹", "welcome": "👋 Benvenuto!", "menu": "Scegli 👇"},
+    "pt": {"name": "Português 🇵🇹", "welcome": "👋 Bem-vindo!", "menu": "Escolha 👇"},
+    "hi": {"name": "Hindi 🇮🇳", "welcome": "👋 स्वागत है!", "menu": "चुनें 👇"},
+    "zh": {"name": "中文 🇨🇳", "welcome": "👋 欢迎!", "menu": "请选择 👇"},
+    "ja": {"name": "日本語 🇯🇵", "welcome": "👋 ようこそ!", "menu": "選択してください 👇"},
+    "ko": {"name": "한국어 🇰🇷", "welcome": "👋 환영합니다!", "menu": "선택 👇"},
 }
