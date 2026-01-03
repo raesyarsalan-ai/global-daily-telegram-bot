@@ -1,28 +1,44 @@
+import sqlite3
 from datetime import datetime
 
-# ذخیره در حافظه (بعداً قابل تبدیل به DB واقعی)
-SHOPPING_LISTS = {}     # user_id -> list
-SHOPPING_HISTORY = {}  # user_id -> list
+DB_NAME = "bot.db"
 
+def connect():
+    return sqlite3.connect(DB_NAME)
 
-def save_shopping_list(user_id: int, raw_text: str, ai_list: str):
-    entry = {
-        "raw": raw_text,
-        "clean": ai_list,
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "reminder": None,
-    }
+def init_db():
+    db = connect()
+    c = db.cursor()
 
-    SHOPPING_LISTS.setdefault(user_id, []).append(entry)
-    SHOPPING_HISTORY.setdefault(user_id, []).append(entry)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS shopping (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        items TEXT,
+        created_at TEXT,
+        reminder TEXT
+    )
+    """)
 
-    return entry
+    db.commit()
+    db.close()
 
+def save_shopping(user_id, items):
+    db = connect()
+    c = db.cursor()
+    c.execute(
+        "INSERT INTO shopping (user_id, items, created_at) VALUES (?,?,?)",
+        (user_id, items, datetime.now().strftime("%Y-%m-%d %H:%M"))
+    )
+    db.commit()
+    db.close()
 
-def set_shopping_reminder(user_id: int, reminder_text: str):
-    if user_id in SHOPPING_LISTS and SHOPPING_LISTS[user_id]:
-        SHOPPING_LISTS[user_id][-1]["reminder"] = reminder_text
-
-
-def get_shopping_history(user_id: int):
-    return SHOPPING_HISTORY.get(user_id, [])
+def set_reminder(user_id, reminder):
+    db = connect()
+    c = db.cursor()
+    c.execute(
+        "UPDATE shopping SET reminder=? WHERE user_id=? ORDER BY id DESC LIMIT 1",
+        (reminder, user_id)
+    )
+    db.commit()
+    db.close()
