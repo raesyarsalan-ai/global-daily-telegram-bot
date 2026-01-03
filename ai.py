@@ -1,25 +1,33 @@
-from openai import OpenAI
-from config import OPENAI_API_KEY, AI_MODEL
+from openai import AsyncOpenAI
+from config import OPENAI_API_KEY
+import json
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
-SYSTEM_PROMPT = """
-You are a smart, friendly daily assistant.
-Help users with tasks, productivity, daily planning, and motivation.
-Be concise and practical.
+async def ask_ai(prompt: str) -> str:
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a helpful daily assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content
+
+
+async def parse_shopping_text(text: str) -> dict:
+    prompt = f"""
+Extract shopping items and reminder datetime from the text.
+Return ONLY valid JSON.
+
+Text:
+{text}
+
+Format:
+{{
+  "items": ["item1", "item2"],
+  "remind_at": "YYYY-MM-DD HH:MM"
+}}
 """
-
-def ask_ai(user_text: str, language: str = "en") -> str:
-    try:
-        res = client.chat.completions.create(
-            model=AI_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_text},
-            ],
-            temperature=0.7,
-            max_tokens=300,
-        )
-        return res.choices[0].message.content
-    except Exception:
-        return "⚠️ AI is temporarily unavailable."
+    response = await ask_ai(prompt)
+    return json.loads(response)
