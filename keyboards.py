@@ -1,15 +1,13 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+def shopping_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("➕ New Shopping List", callback_data="shop_new")],
+        [InlineKeyboardButton("📜 History", callback_data="shop_history")],
+        [InlineKeyboardButton("⬅️ Back", callback_data="back_menu")],
+    ])
 
 
-def main_menu():
-    keyboard = [
-        [InlineKeyboardButton("🤖 AI", callback_data="ai")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-
-def admin_menu():
-    keyboard = [
-        [InlineKeyboardButton("👥 Users", callback_data="admin_users")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
+def shopping_time_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🕒 Today", callback_data="shop_today")],
+        [InlineKeyboardButton("📅 Set Time", callback_data="shop_later")],
+    ])
