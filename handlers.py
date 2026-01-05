@@ -1,32 +1,24 @@
-from telegram import Update
-from telegram.ext import ContextTypes
-from admin import admin_panel, admin_callback
-from database import set_session, get_session
-from keyboards import main_menu
+if data == "shopping":
+    context.user_data["mode"] = "shopping_items"
+    await query.message.reply_text(
+        get_text("ask_shopping", lang)
+    )
+    return
 
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    token = set_session(user_id)
-    context.user_data["session"] = token
-
-    await update.message.reply_text(
-        "Welcome 👋",
+if data == "shop_today":
+    items = context.user_data.pop("shopping_items", [])
+    save_shopping(user_id, items, "today")
+    await query.message.reply_text(
+        get_text("shopping_saved_today", lang),
         reply_markup=main_menu()
     )
+    return
 
-
-def session_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    return context.user_data.get("session") == get_session(user_id)
-
-
-async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not session_guard(update, context):
-        await update.callback_query.message.reply_text("⛔ Logged in elsewhere.")
-        return
-
-    data = update.callback_query.data
-
-    if data.startswith("admin"):
-        await admin_callback(update, context)
+if data == "shop_history":
+    rows = get_shopping_history(user_id)
+    text = format_history(rows)
+    await query.message.reply_text(
+        text or get_text("no_shopping_history", lang),
+        reply_markup=main_menu()
+    )
+    return
