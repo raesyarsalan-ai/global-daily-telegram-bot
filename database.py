@@ -26,6 +26,8 @@ def init_db():
         username TEXT,
         language VARCHAR(10) DEFAULT 'en',
         is_premium BOOLEAN DEFAULT FALSE,
+        session_id TEXT,
+        last_login TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
@@ -57,72 +59,17 @@ def init_db():
     conn.close()
 
 
-# -------- Shopping --------
+# ---------- SESSION MANAGEMENT ----------
 
-def add_shopping(user_id, items, remind):
+def save_session(telegram_id: int, session_id: str, username: str):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO shopping (user_id, items, remind_at)
-        VALUES (%s, %s, %s);
-    """, (user_id, items, remind))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def get_shopping_history(user_id):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT id, items, created_at, remind_at
-        FROM shopping
-        WHERE user_id = %s
-        ORDER BY created_at DESC;
-    """, (user_id,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return rows
-
-
-# -------- Tasks --------
-
-def add_task(user_id, text):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO tasks (user_id, text)
-        VALUES (%s, %s);
-    """, (user_id, text))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def get_tasks(user_id):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT id, text, done, created_at
-        FROM tasks
-        WHERE user_id = %s
-        ORDER BY created_at DESC;
-    """, (user_id,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return rows
-
-
-def set_task_done(user_id, task_id):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        UPDATE tasks
-        SET done = TRUE
-        WHERE id = %s AND user_id = %s;
-    """, (task_id, user_id))
-    conn.commit()
-    cur.close()
-    conn.close()
+        INSERT INTO users (telegram_id, username, session_id, last_login)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (telegram_id)
+        DO UPDATE SET
+            session_id = EXCLUDED.session_id,
+            last_login = EXCLUDED.last_login,
+            username = EXCLUDED.username;
+    """, (telegram_id, username, session_id, datetim
