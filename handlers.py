@@ -1,24 +1,48 @@
-if data == "shopping":
-    context.user_data["mode"] = "shopping_items"
-    await query.message.reply_text(
-        get_text("ask_shopping", lang)
-    )
-    return
+from telegram import Update
+from telegram.ext import ContextTypes
 
-if data == "shop_today":
-    items = context.user_data.pop("shopping_items", [])
-    save_shopping(user_id, items, "today")
-    await query.message.reply_text(
-        get_text("shopping_saved_today", lang),
+from database import (
+    set_session,
+    get_session,
+    daily_checkin,
+    get_streak,
+    increment_activity,
+    get_profile_summary,
+    set_mood,
+    get_mood,
+    generate_referral,
+    get_referral_code,
+    unlock_badge,
+)
+
+from keyboards import main_menu
+
+
+# =========================
+# START
+# =========================
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+
+    token = set_session(user_id)
+    context.user_data["session"] = token
+
+    increment_activity(user_id)
+
+    await update.message.reply_text(
+        "👋 Welcome back!",
         reply_markup=main_menu()
     )
-    return
 
-if data == "shop_history":
-    rows = get_shopping_history(user_id)
-    text = format_history(rows)
-    await query.message.reply_text(
-        text or get_text("no_shopping_history", lang),
-        reply_markup=main_menu()
-    )
-    return
+
+# =========================
+# SESSION GUARD
+# =========================
+def session_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    return context.user_data.get("session") == get_session(user_id)
+
+
+# =========================
+# CALLBACK HANDLER
+# ========================
