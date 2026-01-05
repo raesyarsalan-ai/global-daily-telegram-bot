@@ -1,25 +1,15 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def main_menu(is_admin=False):
+def main_menu():
     keyboard = [
-        [InlineKeyboardButton("🤖 Ask AI", callback_data="ai")],
-        [InlineKeyboardButton("🛒 Shopping List", callback_data="shopping")],
-        [InlineKeyboardButton("📝 Tasks", callback_data="tasks")],
-        [InlineKeyboardButton("🌐 Language", callback_data="language")],
+        [InlineKeyboardButton("🤖 AI", callback_data="ai")],
     ]
-
-    if is_admin:
-        keyboard.append(
-            [InlineKeyboardButton("🛠 Admin Panel", callback_data="admin_panel")]
-        )
-
     return InlineKeyboardMarkup(keyboard)
 
 
 def admin_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("👥 View Users", callback_data="admin_users")],
-        [InlineKeyboardButton("📊 Statistics", callback_data="admin_stats")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="back_menu")]
-    ])
+    keyboard = [
+        [InlineKeyboardButton("👥 Users", callback_data="admin_users")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
