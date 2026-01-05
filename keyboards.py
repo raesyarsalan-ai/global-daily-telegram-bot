@@ -1,35 +1,25 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def main_menu():
-    return InlineKeyboardMarkup([
+def main_menu(is_admin=False):
+    keyboard = [
         [InlineKeyboardButton("🤖 Ask AI", callback_data="ai")],
-        [InlineKeyboardButton("🛒 Shopping List", callback_data="shop")],
+        [InlineKeyboardButton("🛒 Shopping List", callback_data="shopping")],
         [InlineKeyboardButton("📝 Tasks", callback_data="tasks")],
         [InlineKeyboardButton("🌐 Language", callback_data="language")],
-        [InlineKeyboardButton("❓ Help", callback_data="help")],
-    ])
+    ]
+
+    if is_admin:
+        keyboard.append(
+            [InlineKeyboardButton("🛠 Admin Panel", callback_data="admin_panel")]
+        )
+
+    return InlineKeyboardMarkup(keyboard)
 
 
-def shopping_time_menu():
+def admin_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🕒 Today", callback_data="shop_today")],
-        [InlineKeyboardButton("📅 Choose date", callback_data="shop_date")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="back_menu")],
-    ])
-
-
-def tasks_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("➕ Add Task", callback_data="task_add")],
-        [InlineKeyboardButton("📋 View Tasks", callback_data="task_list")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="back_menu")],
-    ])
-
-
-def language_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("English 🇺🇸", callback_data="lang_en")],
-        [InlineKeyboardButton("فارسی 🇮🇷", callback_data="lang_fa")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="back_menu")],
+        [InlineKeyboardButton("👥 View Users", callback_data="admin_users")],
+        [InlineKeyboardButton("📊 Statistics", callback_data="admin_stats")],
+        [InlineKeyboardButton("⬅️ Back", callback_data="back_menu")]
     ])
