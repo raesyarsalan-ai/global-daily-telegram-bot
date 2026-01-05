@@ -1,6 +1,5 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from datetime import datetime
 from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
 
@@ -18,7 +17,6 @@ def init_db():
     conn = get_connection()
     cur = conn.cursor()
 
-    # users
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -26,13 +24,10 @@ def init_db():
         username TEXT,
         language VARCHAR(10) DEFAULT 'en',
         is_premium BOOLEAN DEFAULT FALSE,
-        session_id TEXT,
-        last_login TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
 
-    # shopping
     cur.execute("""
     CREATE TABLE IF NOT EXISTS shopping (
         id SERIAL PRIMARY KEY,
@@ -43,7 +38,6 @@ def init_db():
     );
     """)
 
-    # tasks
     cur.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
@@ -59,17 +53,23 @@ def init_db():
     conn.close()
 
 
-# ---------- SESSION MANAGEMENT ----------
+# ---------- Admin ----------
 
-def save_session(telegram_id: int, session_id: str, username: str):
+def get_all_users():
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO users (telegram_id, username, session_id, last_login)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (telegram_id)
-        DO UPDATE SET
-            session_id = EXCLUDED.session_id,
-            last_login = EXCLUDED.last_login,
-            username = EXCLUDED.username;
-    """, (telegram_id, username, session_id, datetim
+    cur.execute("SELECT telegram_id, username, language, is_premium FROM users ORDER BY created_at DESC")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+
+def count_users():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM users")
+    count = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return count
