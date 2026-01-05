@@ -1,44 +1,75 @@
-import sqlite3
-from datetime import datetime
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
-DB_NAME = "bot.db"
-
-def connect():
-    return sqlite3.connect(DB_NAME)
+def get_connection():
+    """Create a new PostgreSQL connection."""
+    return psycopg2.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+    )
 
 def init_db():
-    db = connect()
-    c = db.cursor()
+    """Initialize all required tables in the database."""
+    conn = get_connection()
+    cur = conn.cursor()
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS shopping (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        items TEXT,
-        created_at TEXT,
-        reminder TEXT
-    )
+    # Users table
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        telegram_id BIGINT UNIQUE NOT NULL,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        language VARCHAR(10) DEFAULT 'en',
+        is_premium BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """)
 
-    db.commit()
-    db.close()
+    conn.commit()
+    cur.close()
+    conn.close()
 
-def save_shopping(user_id, items):
-    db = connect()
-    c = db.cursor()
-    c.execute(
-        "INSERT INTO shopping (user_id, items, created_at) VALUES (?,?,?)",
-        (user_id, items, datetime.now().strftime("%Y-%m-%d %H:%M"))
-    )
-    db.commit()
-    db.close()
+# User utility methods
 
-def set_reminder(user_id, reminder):
-    db = connect()
-    c = db.cursor()
-    c.execute(
-        "UPDATE shopping SET reminder=? WHERE user_id=? ORDER BY id DESC LIMIT 1",
-        (reminder, user_id)
-    )
-    db.commit()
-    db.close()
+def get_user_by_telegram_id(telegram_id):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM users WHERE telegram_id = %s", (telegram_id,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    return user
+
+def create_user(telegram_id, username, password_hash):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO users (telegram_id, username, password_hash)
+        VALUES (%s, %s, %s)
+        RETURNING id;
+    """, (telegram_id, username, password_hash))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+
+def set_user_language(telegram_id, language):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE users SET language = %s WHERE telegram_id = %s;
+    """, (language, telegram_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def get_user_language(telegram_id):
+    user = get_user_by_telegram_id(telegram_id)
+    if user and "language" in user:
+        return user["language"]
+    return "en"
