@@ -1,15 +1,33 @@
-from telegram.ext import JobQueue
-from database import get_tasks
+import datetime
+from telegram.ext import ContextTypes
 
-async def daily_reminder(context):
+from database import get_preferences
+
+
+# =========================
+# DAILY SMART REMINDER
+# =========================
+async def smart_daily_reminder(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
-    tasks = get_tasks(job.chat_id)
-    if tasks:
-        text = "Daily Reminder:\n"
-        for i, t, d in tasks:
-            if d == 0: text += f"{i}. {t}\n"
-        await context.bot.send_message(chat_id=job.chat_id, text=text)
+    chat_id = job.chat_id
 
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="⏰ Daily Reminder\nHave a great day! 🌱"
+    )
+
+
+# =========================
+# SETUP SCHEDULER
+# =========================
 def setup_scheduler(application):
-    jq = application.job_queue
-    jq.run_daily(daily_reminder, time=datetime.time(hour=9, minute=0))
+    job_queue = application.job_queue
+
+    # پیش‌فرض: ساعت ۹ صبح
+    reminder_time = datetime.time(hour=9, minute=0)
+
+    job_queue.run_daily(
+        smart_daily_reminder,
+        time=reminder_time,
+        name="daily_smart_reminder"
+    )
