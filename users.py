@@ -1,23 +1,42 @@
-from database import db
+import secrets
+import string
+from passlib.context import CryptContext
+from database import get_user_by_telegram_id, create_user
 
-async def register_user(tg_id, username):
-    await db.execute(
-        "INSERT INTO users (telegram_id, username) VALUES ($1,$2) ON CONFLICT DO NOTHING",
-        tg_id, username
-    )
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-async def is_subscribed(tg_id):
-    row = await db.fetchrow(
-        "SELECT 1 FROM users WHERE telegram_id=$1 AND subscription_until > NOW()", tg_id
-    )
-    return row is not None
+def generate_username():
+    """Generate a Telegram-independent username."""
+    return "usr_" + secrets.token_hex(4)
 
-async def set_language(tg_id, lang):
-    await db.execute(
-        "UPDATE users SET language=$1 WHERE telegram_id=$2", lang, tg_id
-    )
+def generate_password(length: int = 10) -> str:
+    """Generate a random password string."""
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
-async def get_language(tg_id):
-    return await db.fetchval(
-        "SELECT language FROM users WHERE telegram_id=$1", tg_id
-    ) or "en"
+def hash_password(password: str) -> str:
+    """Hash the user's password securely."""
+    return pwd_context.hash(password)
+
+def register_user_if_not_exists(telegram_id):
+    """
+    Register a user if does not exist.
+    Returns:
+        dict with username & password (plain) if new,
+        None if user already exists.
+    """
+    user = get_user_by_telegram_id(telegram_id)
+    if user:
+        return None  # already registered
+
+    username = generate_username()
+    password = generate_password()
+    password_hash = hash_password(password)
+
+    # Save user in database
+    create_user(telegram_id, username, password_hash)
+
+    return {
+        "username": username,
+        "password": password
+    }
