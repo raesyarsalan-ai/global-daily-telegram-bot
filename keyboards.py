@@ -1,13 +1,34 @@
-def shopping_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("➕ New Shopping List", callback_data="shop_new")],
-        [InlineKeyboardButton("📜 History", callback_data="shop_history")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="back_menu")],
-    ])
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def shopping_time_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🕒 Today", callback_data="shop_today")],
-        [InlineKeyboardButton("📅 Set Time", callback_data="shop_later")],
-    ])
+# =========================
+# MAIN MENU
+# =========================
+def main_menu():
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Daily Check-in", callback_data="daily_checkin")
+        ],
+        [
+            InlineKeyboardButton("🧠 Mood Today", callback_data="mood_menu"),
+            InlineKeyboardButton("👤 Profile", callback_data="profile")
+        ],
+        [
+            InlineKeyboardButton("🔗 Referral", callback_data="referral")
+        ],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+# =========================
+# MOOD MENU
+# =========================
+def mood_menu():
+    keyboard = [
+        [
+            InlineKeyboardButton("😊 Happy", callback_data="mood_happy"),
+            InlineKeyboardButton("😐 Neutral", callback_data="mood_neutral"),
+            InlineKeyboardButton("😔 Sad", callback_data="mood_sad"),
+        ],
+        [
+            InlineKeyboardButton("😡 Angry", callbac
