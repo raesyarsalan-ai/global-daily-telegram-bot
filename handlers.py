@@ -9,13 +9,12 @@ from database import (
     increment_activity,
     get_profile_summary,
     set_mood,
-    get_mood,
     generate_referral,
     get_referral_code,
     unlock_badge,
 )
 
-from keyboards import main_menu
+from keyboards import main_menu, mood_menu
 
 
 # =========================
@@ -37,12 +36,4 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # =========================
 # SESSION GUARD
-# =========================
-def session_guard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    return context.user_data.get("session") == get_session(user_id)
-
-
-# =========================
-# CALLBACK HANDLER
-# ========================
+# =========
