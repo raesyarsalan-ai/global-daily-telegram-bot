@@ -1,9 +1,10 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from datetime import datetime
 from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
+
 def get_connection():
-    """Create a new PostgreSQL connection."""
     return psycopg2.connect(
         host=DB_HOST,
         port=DB_PORT,
@@ -12,20 +13,41 @@ def get_connection():
         password=DB_PASSWORD,
     )
 
+
 def init_db():
-    """Initialize all required tables in the database."""
     conn = get_connection()
     cur = conn.cursor()
 
-    # Users table
+    # users
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         telegram_id BIGINT UNIQUE NOT NULL,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
+        username TEXT,
         language VARCHAR(10) DEFAULT 'en',
         is_premium BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    # shopping
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS shopping (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        items TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        remind_at TEXT
+    );
+    """)
+
+    # tasks
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        text TEXT NOT NULL,
+        done BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
@@ -34,42 +56,73 @@ def init_db():
     cur.close()
     conn.close()
 
-# User utility methods
 
-def get_user_by_telegram_id(telegram_id):
-    conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM users WHERE telegram_id = %s", (telegram_id,))
-    user = cur.fetchone()
-    cur.close()
-    conn.close()
-    return user
+# -------- Shopping --------
 
-def create_user(telegram_id, username, password_hash):
+def add_shopping(user_id, items, remind):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO users (telegram_id, username, password_hash)
-        VALUES (%s, %s, %s)
-        RETURNING id;
-    """, (telegram_id, username, password_hash))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return True
-
-def set_user_language(telegram_id, language):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        UPDATE users SET language = %s WHERE telegram_id = %s;
-    """, (language, telegram_id))
+        INSERT INTO shopping (user_id, items, remind_at)
+        VALUES (%s, %s, %s);
+    """, (user_id, items, remind))
     conn.commit()
     cur.close()
     conn.close()
 
-def get_user_language(telegram_id):
-    user = get_user_by_telegram_id(telegram_id)
-    if user and "language" in user:
-        return user["language"]
-    return "en"
+
+def get_shopping_history(user_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, items, created_at, remind_at
+        FROM shopping
+        WHERE user_id = %s
+        ORDER BY created_at DESC;
+    """, (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+
+# -------- Tasks --------
+
+def add_task(user_id, text):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO tasks (user_id, text)
+        VALUES (%s, %s);
+    """, (user_id, text))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def get_tasks(user_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, text, done, created_at
+        FROM tasks
+        WHERE user_id = %s
+        ORDER BY created_at DESC;
+    """, (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+
+def set_task_done(user_id, task_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE tasks
+        SET done = TRUE
+        WHERE id = %s AND user_id = %s;
+    """, (task_id, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
