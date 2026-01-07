@@ -35,4 +35,91 @@ def init_db():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS ai_memory (
         id SERIAL PRIMARY KEY,
-        telegram_i_
+        telegram_id BIGINT,
+        role TEXT,
+        content TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS payments (
+        id SERIAL PRIMARY KEY,
+        telegram_id BIGINT,
+        invoice_id TEXT UNIQUE,
+        amount NUMERIC,
+        status TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# =========================
+# USER SECURITY
+# =========================
+def lock_device(telegram_id, device_hash):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE users SET device_hash=%s
+        WHERE telegram_id=%s AND device_hash IS NULL
+    """, (device_hash, telegram_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def check_device(telegram_id, device_hash):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT device_hash FROM users WHERE telegram_id=%s
+    """, (telegram_id,))
+    u = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not u:
+        return True
+    if u["device_hash"] is None:
+        return True
+    return u["device_hash"] == device_hash
+
+
+# =========================
+# PREMIUM
+# =========================
+def activate_premium(telegram_id, days=30):
+    until = datetime.utcnow() + timedelta(days=days)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE users
+        SET is_premium=TRUE, premium_until=%s
+        WHERE telegram_id=%s
+    """, (until, telegram_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def is_premium(telegram_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT is_premium, premium_until
+        FROM users WHERE telegram_id=%s
+    """, (telegram_id,))
+    u = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not u or not u["is_premium"]:
+        return False
+    if u["premium_until"] < datetime.utcnow():
+        return False
+    return True
