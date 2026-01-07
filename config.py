@@ -1,21 +1,35 @@
 import os
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", None)
+# =========================
+# BOT & AI
+# =========================
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
 
-AI_MODEL = "gpt-4o-mini"
-
-# PostgreSQL database settings
+# =========================
+# DATABASE (PostgreSQL)
+# =========================
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
+DB_PORT = int(os.getenv("DB_PORT", "5432"))
 DB_NAME = os.getenv("DB_NAME", "global_daily_bot")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
-# Admin Telegram IDs
-ADMIN_IDS = [
-    123456789  # ← آیدی عددی تلگرام خودت
-]
+# =========================
+# ADMIN
+# =========================
+ADMIN_IDS = list(
+    map(int, os.getenv("ADMIN_IDS", "123456789").split(","))
+)
 
+# =========================
+# PAYMENTS
+# =========================
+CRYPTO_API_KEY = os.getenv("CRYPTO_API_KEY")
+
+# =========================
+# VALIDATION
+# =========================
 if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN is not set in environment variables!")
+    raise RuntimeError("❌ BOT_TOKEN is not set")
