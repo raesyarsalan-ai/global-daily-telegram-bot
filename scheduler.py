@@ -1,33 +1,39 @@
 import datetime
 from telegram.ext import ContextTypes
+from database import get_connection
 
-from database import get_preferences
 
-
-# =========================
-# DAILY SMART REMINDER
-# =========================
-async def smart_daily_reminder(context: ContextTypes.DEFAULT_TYPE):
+async def reminder_job(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
-    chat_id = job.chat_id
+    data = job.data
 
     await context.bot.send_message(
-        chat_id=chat_id,
-        text="⏰ Daily Reminder\nHave a great day! 🌱"
+        chat_id=data["telegram_id"],
+        text=f"⏰ Reminder:\n{data['text']}"
     )
 
 
-# =========================
-# SETUP SCHEDULER
-# =========================
 def setup_scheduler(application):
     job_queue = application.job_queue
 
-    # پیش‌فرض: ساعت ۹ صبح
-    reminder_time = datetime.time(hour=9, minute=0)
+    # Load future reminders from DB on startup
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT telegram_id, text, remind_at
+        FROM reminders
+        WHERE remind_at > NOW()
+    """)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
 
-    job_queue.run_daily(
-        smart_daily_reminder,
-        time=reminder_time,
-        name="daily_smart_reminder"
-    )
+    for r in rows:
+        job_queue.run_once(
+            reminder_job,
+            when=r["remind_at"],
+            data={
+                "telegram_id": r["telegram_id"],
+                "text": r["text"]
+            }
+        )
