@@ -1,11 +1,11 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def main_menu(lang):
+def main_menu(lang: str):
     keyboard = [
-        [InlineKeyboardButton("✅ Daily Tasks", callback_data="tasks")],
+        [InlineKeyboardButton("✅ Tasks", callback_data="tasks")],
+        [InlineKeyboardButton("⏰ Add Reminder", callback_data="add_reminder")],
         [InlineKeyboardButton("🛒 Shopping List", callback_data="shopping")],
-        [InlineKeyboardButton("📅 Reminders", callback_data="reminders")],
         [InlineKeyboardButton("🤖 AI Assistant", callback_data="ai")],
         [InlineKeyboardButton("⭐ Premium", callback_data="premium")],
     ]
