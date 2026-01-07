@@ -1,35 +1,55 @@
 import os
+from urllib.parse import urlparse
+
 
 # =========================
 # BOT & AI
 # =========================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
+
 
 # =========================
-# DATABASE (PostgreSQL)
+# DATABASE (Railway Compatible)
 # =========================
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = int(os.getenv("DB_PORT", "5432"))
-DB_NAME = os.getenv("DB_NAME", "global_daily_bot")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    result = urlparse(DATABASE_URL)
+
+    DB_HOST = result.hostname
+    DB_PORT = result.port
+    DB_NAME = result.path.lstrip("/")
+    DB_USER = result.username
+    DB_PASSWORD = result.password
+else:
+    # Local / Manual fallback
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = os.getenv("DB_PORT", 5432)
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+
 
 # =========================
-# ADMIN
+# WEATHER
 # =========================
-ADMIN_IDS = list(
-    map(int, os.getenv("ADMIN_IDS", "123456789").split(","))
-)
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+
 
 # =========================
-# PAYMENTS
+# CRYPTO PAYMENT (CryptoBot)
 # =========================
 CRYPTO_API_KEY = os.getenv("CRYPTO_API_KEY")
 
+
 # =========================
-# VALIDATION
+# PROJECT SETTINGS
 # =========================
-if not BOT_TOKEN:
-    raise RuntimeError("❌ BOT_TOKEN is not set")
+DEFAULT_LANGUAGE = "en"
+SUPPORTED_LANGUAGES = [
+    "en", "fa", "ar", "de", "fr", "es", "it",
+    "ru", "tr", "pt", "nl", "pl", "uk", "hi"
+]
+
+PREMIUM_SUBSCRIPTION_PRICE = 5.0  # USDT
