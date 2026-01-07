@@ -14,7 +14,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
 
     # =========================
-    # LANGUAGE
+    # LANGUAGE SELECTION
     # =========================
     if data.startswith("lang_"):
         lang = data.split("_")[1]
@@ -30,15 +30,33 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # TASKS
     # =========================
     if data == "tasks":
-        await query.message.reply_text("📝 Send your daily task:")
+        await query.message.reply_text(
+            "📝 Send task like:\n"
+            "Buy milk | daily\n"
+            "Gym | weekly\n"
+            "Pay rent | monthly"
+        )
         context.user_data["mode"] = "task"
+        return
+
+    # =========================
+    # REMINDER
+    # =========================
+    if data == "add_reminder":
+        await query.message.reply_text(
+            "⏰ Send reminder like:\n"
+            "Meeting with John | 2026-01-10 09:00"
+        )
+        context.user_data["mode"] = "reminder"
         return
 
     # =========================
     # SHOPPING
     # =========================
     if data == "shopping":
-        await query.message.reply_text("🛒 Send shopping items (one per line):")
+        await query.message.reply_text(
+            "🛒 Send shopping items (one per line):"
+        )
         context.user_data["mode"] = "shopping"
         return
 
@@ -55,7 +73,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # =========================
-    # PREMIUM
+    # PREMIUM INFO
     # =========================
     if data == "premium":
         await query.message.reply_text(
