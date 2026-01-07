@@ -4,9 +4,6 @@ from datetime import datetime, timedelta
 from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
 
-# =========================
-# CONNECTION
-# =========================
 def get_connection():
     return psycopg2.connect(
         host=DB_HOST,
@@ -18,9 +15,6 @@ def get_connection():
     )
 
 
-# =========================
-# INIT DB
-# =========================
 def init_db():
     conn = get_connection()
     cur = conn.cursor()
@@ -29,10 +23,20 @@ def init_db():
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         telegram_id BIGINT UNIQUE NOT NULL,
-        username TEXT,
         is_premium BOOLEAN DEFAULT FALSE,
         premium_until TIMESTAMP,
-        language TEXT DEFAULT 'en',
+        ai_requests INT DEFAULT 0,
+        last_device TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS ai_memory (
+        id SERIAL PRIMARY KEY,
+        telegram_id BIGINT,
+        role TEXT,
+        content TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
@@ -40,69 +44,21 @@ def init_db():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS payments (
         id SERIAL PRIMARY KEY,
-        telegram_id BIGINT NOT NULL,
-        order_id TEXT UNIQUE NOT NULL,
-        amount_usd NUMERIC NOT NULL,
-        status TEXT DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS reminders (
-        id SERIAL PRIMARY KEY,
         telegram_id BIGINT,
-        text TEXT,
-        remind_at TIMESTAMP
+        order_id TEXT UNIQUE,
+        status TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
     conn.commit()
     cur.close()
     conn.close()
-
-
-# =========================
-# USERS
-# =========================
-def get_or_create_user(telegram_id, username=None):
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM users WHERE telegram_id=%s", (telegram_id,))
-    user = cur.fetchone()
-
-    if not user:
-        cur.execute("""
-            INSERT INTO users (telegram_id, username)
-            VALUES (%s, %s)
-            RETURNING *
-        """, (telegram_id, username))
-        user = cur.fetchone()
-        conn.commit()
-
-    cur.close()
-    conn.close()
-    return user
 
 
 # =========================
 # PREMIUM
 # =========================
-def activate_premium(telegram_id, days=30):
-    until = datetime.utcnow() + timedelta(days=days)
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        UPDATE users
-        SET is_premium=TRUE, premium_until=%s
-        WHERE telegram_id=%s
-    """, (until, telegram_id))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
 def is_premium(telegram_id):
     conn = get_connection()
     cur = conn.cursor()
@@ -110,40 +66,58 @@ def is_premium(telegram_id):
         SELECT is_premium, premium_until
         FROM users WHERE telegram_id=%s
     """, (telegram_id,))
-    user = cur.fetchone()
+    u = cur.fetchone()
     cur.close()
     conn.close()
 
-    if not user or not user["is_premium"]:
+    if not u or not u["is_premium"]:
         return False
-    if user["premium_until"] and user["premium_until"] < datetime.utcnow():
+    if u["premium_until"] and u["premium_until"] < datetime.utcnow():
         return False
     return True
 
 
 # =========================
-# PAYMENTS
+# AI MEMORY
 # =========================
-def save_payment(telegram_id, order_id, amount):
+def save_ai_message(telegram_id, role, content):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO payments (telegram_id, order_id, amount_usd)
+        INSERT INTO ai_memory (telegram_id, role, content)
         VALUES (%s, %s, %s)
-    """, (telegram_id, order_id, amount))
+    """, (telegram_id, role, content))
     conn.commit()
     cur.close()
     conn.close()
 
 
-def complete_payment(order_id):
+def get_ai_context(telegram_id, limit=6):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        UPDATE payments
-        SET status='paid'
-        WHERE order_id=%s
-    """, (order_id,))
+        SELECT role, content FROM ai_memory
+        WHERE telegram_id=%s
+        ORDER BY created_at DESC
+        LIMIT %s
+    """, (telegram_id, limit))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return list(reversed(rows))
+
+
+# =========================
+# RATE LIMIT
+# =========================
+def increase_ai_usage(telegram_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE users
+        SET ai_requests = ai_requests + 1
+        WHERE telegram_id=%s
+    """, (telegram_id,))
     conn.commit()
     cur.close()
     conn.close()
