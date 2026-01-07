@@ -1,12 +1,11 @@
 import psycopg2
-import uuid
-import datetime
 from psycopg2.extras import RealDictCursor
+from datetime import datetime, timedelta
 from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
 
 # =========================
-# Connection
+# CONNECTION
 # =========================
 def get_connection():
     return psycopg2.connect(
@@ -15,72 +14,60 @@ def get_connection():
         dbname=DB_NAME,
         user=DB_USER,
         password=DB_PASSWORD,
+        cursor_factory=RealDictCursor
     )
 
 
 # =========================
-# Init DB (tables)
+# INIT DB
 # =========================
 def init_db():
     conn = get_connection()
     cur = conn.cursor()
 
-    # users
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         telegram_id BIGINT UNIQUE NOT NULL,
         username TEXT,
-        password_hash TEXT,
         is_premium BOOLEAN DEFAULT FALSE,
+        premium_until TIMESTAMP,
+        language TEXT DEFAULT 'en',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
-    # sessions
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS sessions (
-        telegram_id BIGINT PRIMARY KEY,
-        token TEXT,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    # ---------- Phase 1 ----------
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS daily_checkins (
+    CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
         telegram_id BIGINT,
-        checkin_date DATE,
-        PRIMARY KEY (telegram_id, checkin_date)
+        title TEXT,
+        schedule TEXT,
+        due_at TIMESTAMP,
+        done BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS user_activity (
-        telegram_id BIGINT PRIMARY KEY,
-        activity_count INTEGER DEFAULT 0,
-        last_activity TIMESTAMP
-    )
-    """)
-
-    # ---------- Phase 2 ----------
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS user_mood (
-        telegram_id BIGINT PRIMARY KEY,
-        mood TEXT,
-        updated_at TIMESTAMP
+    CREATE TABLE IF NOT EXISTS shopping (
+        id SERIAL PRIMARY KEY,
+        telegram_id BIGINT,
+        items TEXT,
+        remind_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS user_preferences (
-        telegram_id BIGINT PRIMARY KEY,
-        preferred_tone TEXT DEFAULT 'friendly',
-        reminder_hour INTEGER DEFAULT 9
+    CREATE TABLE IF NOT EXISTS reminders (
+        id SERIAL PRIMARY KEY,
+        telegram_id BIGINT,
+        text TEXT,
+        remind_at TIMESTAMP
     )
     """)
 
-    # ---------- Phase 3 ----------
     cur.execute("""
     CREATE TABLE IF NOT EXISTS referrals (
         telegram_id BIGINT PRIMARY KEY,
@@ -90,13 +77,80 @@ def init_db():
     )
     """)
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS achievements (
-        telegram_id BIGINT,
-        badge TEXT,
-        unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (telegram_id, badge)
-    )
-    """)
-
     conn.commit()
+    cur.close()
+    conn.close()
+
+
+# =========================
+# USERS
+# =========================
+def get_or_create_user(telegram_id, username=None):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT * FROM users WHERE telegram_id=%s",
+        (telegram_id,)
+    )
+    user = cur.fetchone()
+
+    if not user:
+        cur.execute("""
+            INSERT INTO users (telegram_id, username)
+            VALUES (%s, %s)
+            RETURNING *
+        """, (telegram_id, username))
+        user = cur.fetchone()
+        conn.commit()
+
+    cur.close()
+    conn.close()
+    return user
+
+
+def set_language(telegram_id, lang):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE users SET language=%s WHERE telegram_id=%s",
+        (lang, telegram_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# =========================
+# SUBSCRIPTION
+# =========================
+def activate_premium(telegram_id, days=30):
+    until = datetime.utcnow() + timedelta(days=days)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE users
+        SET is_premium=TRUE, premium_until=%s
+        WHERE telegram_id=%s
+    """, (until, telegram_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def is_premium(telegram_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT is_premium, premium_until
+        FROM users WHERE telegram_id=%s
+    """, (telegram_id,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not user or not user["is_premium"]:
+        return False
+    if user["premium_until"] and user["premium_until"] < datetime.utcnow():
+        return False
+    return True
